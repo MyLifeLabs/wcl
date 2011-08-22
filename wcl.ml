@@ -6,7 +6,6 @@
   TODO: support for files over 1GB on 32-bit platforms
   TODO: option for progress frequency
   TODO: option for printing ints without commas
-  TODO: overwrite previous progress line instead of appending
 *)
 
 open Printf
