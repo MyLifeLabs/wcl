@@ -16,3 +16,17 @@ complete:
   167,622,458 bbbbbbbbbbbb.dat
   244,602,594 ccccccccc.dat
   443,486,884 total
+
+
+Installation:
+
+Requires a standard installation of OCaml.
+
+ $ make
+ $ cp wcl ~/bin   # copy executable to wherever you want
+
+
+Limitations:
+
+- no support for files over 1GB on 32-bit platforms
+- progress bar probably doesn't show up properly on Windows
