@@ -1,0 +1,2 @@
+"wc -l" with estimation of total number of lines as it progresses
+and progress indicator.
