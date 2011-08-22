@@ -1,2 +1,18 @@
 "wc -l" with estimation of total number of lines as it progresses
 and progress indicator.
+
+Example:
+
+in progress:
+
+  $ wcl aaaaaaaaaaaaa.dat bbbbbbbbbbbb.dat ccccccccc.dat
+  31,261,832 aaaaaaaaaaaaa.dat
+   11% [bbbbbbbbbbbb.dat] projected line count: 443,486,924
+
+complete:
+
+  $ wcl aaaaaaaaaaaaa.dat bbbbbbbbbbbb.dat ccccccccc.dat
+  31,261,832 aaaaaaaaaaaaa.dat
+  167,622,458 bbbbbbbbbbbb.dat
+  244,602,594 ccccccccc.dat
+  443,486,884 total
