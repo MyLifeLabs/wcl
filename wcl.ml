@@ -4,11 +4,11 @@
 
 (*
   TODO: support for files over 1GB on 32-bit platforms
-  TODO: option for progress frequency
-  TODO: option for printing ints without commas
 *)
 
 open Printf
+
+let every = 1_000_000
 
 let rec select f = function
     [] -> []
@@ -57,45 +57,68 @@ let print_progress total_bytes fname bytes lines =
     (Filename.basename fname)
     (readable_string_of_int (truncate total_lines))
 
-let count enable_progress every total_bytes initial_bytes initial_lines fname =
-  let ic = open_in fname in
+let find_lines_in_chunk
+    total_bytes initial_bytes initial_lines fname buf len =
   let local_lines = ref 0 in
-  try
-    while true do
-      ignore (input_line ic);
-      incr local_lines;
-      if enable_progress && !local_lines mod every = 0 then (
-        let local_bytes = pos_in ic in 
-        clear_progress ();
-        print_progress
+  for i = 0 to len - 1 do
+    match buf.[i] with
+        '\n' ->
+          incr local_lines;
+          if (initial_lines + !local_lines) mod every = 0 then (
+            clear_progress ();
+            print_progress
+              total_bytes
+              fname
+              (initial_bytes + i)
+              (initial_lines + !local_lines)
+          )
+      | _ -> ()
+  done;
+  !local_lines
+
+let refill ic buf =
+  let maxlen = String.length buf in
+  input ic buf 0 maxlen
+
+let rec read_file total_bytes initial_bytes initial_lines fname ic buf =
+  match refill ic buf with
+      0 -> initial_lines
+    | chunk_bytes ->
+        let chunk_lines =
+          find_lines_in_chunk
+            total_bytes initial_bytes initial_lines fname buf chunk_bytes
+        in
+        read_file
           total_bytes
-          fname (initial_bytes + local_bytes) (initial_lines + !local_lines)
-      )
-    done;
-    assert false
-  with
-      End_of_file ->
-        close_in ic;
-        !local_lines
-    | e ->
-        close_in_noerr ic;
-        raise e
+          (initial_bytes + chunk_bytes) (initial_lines + chunk_lines)
+          fname ic buf 
+
+let count total_bytes initial_bytes initial_lines fname =
+  let ic = open_in fname in
+  try
+    let buf = String.create 8192 in
+    let lines =
+      read_file total_bytes initial_bytes initial_lines fname ic buf in
+    close_in ic;
+    lines
+  with e ->
+    close_in_noerr ic;
+    raise e
 
 let main () =
-  let enable_progress = true in
-  let every = 1_000_000 in
   let files = List.tl (Array.to_list Sys.argv) in
   let l = select get_info files in
   let total_bytes = get_total_bytes l in
   let _, total_lines =
     List.fold_left (
-      fun (bytes, lines) (fname, info) ->
-        let local_lines =
-          count enable_progress every total_bytes bytes lines fname
+      fun (bytes0, lines0) (fname, info) ->
+        let lines =
+          count total_bytes bytes0 lines0 fname
         in
+        let file_lines = lines - lines0 in
         clear_progress ();
-        printf "%s %s\n%!" (readable_string_of_int local_lines) fname;
-        (bytes + info.Unix.st_size, lines + local_lines)
+        printf "%s %s\n%!" (readable_string_of_int file_lines) fname;
+        (bytes0 + info.Unix.st_size, lines)
     ) (0, 0) l
   in
   printf "%s total\n%!" (readable_string_of_int total_lines)
