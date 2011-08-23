@@ -61,7 +61,7 @@ let find_lines_in_chunk
     total_bytes initial_bytes initial_lines fname buf len =
   let local_lines = ref 0 in
   for i = 0 to len - 1 do
-    match buf.[i] with
+    match String.unsafe_get buf i with
         '\n' ->
           incr local_lines;
           if (initial_lines + !local_lines) mod every = 0 then (
@@ -76,12 +76,14 @@ let find_lines_in_chunk
   done;
   !local_lines
 
-let refill ic buf =
+let refill fd buf =
   let maxlen = String.length buf in
-  input ic buf 0 maxlen
+  let len = Unix.read fd buf 0 maxlen in
+  assert (len >= 0);
+  len
 
-let rec read_file total_bytes initial_bytes initial_lines fname ic buf =
-  match refill ic buf with
+let rec read_file total_bytes initial_bytes initial_lines fname fd buf =
+  match refill fd buf with
       0 -> initial_lines
     | chunk_bytes ->
         let chunk_lines =
@@ -91,18 +93,18 @@ let rec read_file total_bytes initial_bytes initial_lines fname ic buf =
         read_file
           total_bytes
           (initial_bytes + chunk_bytes) (initial_lines + chunk_lines)
-          fname ic buf 
+          fname fd buf 
 
 let count total_bytes initial_bytes initial_lines fname =
-  let ic = open_in fname in
+  let fd = Unix.openfile fname [Unix.O_RDONLY] 0 in
   try
     let buf = String.create (1024 * 1024) in
     let lines =
-      read_file total_bytes initial_bytes initial_lines fname ic buf in
-    close_in ic;
+      read_file total_bytes initial_bytes initial_lines fname fd buf in
+    Unix.close fd;
     lines
   with e ->
-    close_in_noerr ic;
+    (try Unix.close fd with _ -> ());
     raise e
 
 let main () =
