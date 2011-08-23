@@ -96,7 +96,7 @@ let rec read_file total_bytes initial_bytes initial_lines fname ic buf =
 let count total_bytes initial_bytes initial_lines fname =
   let ic = open_in fname in
   try
-    let buf = String.create 8192 in
+    let buf = String.create (1024 * 1024) in
     let lines =
       read_file total_bytes initial_bytes initial_lines fname ic buf in
     close_in ic;
