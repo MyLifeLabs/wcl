@@ -10,6 +10,8 @@ open Printf
 
 let every = 1_000_000
 
+let count_display_width = ref (-1)
+
 let rec select f = function
     [] -> []
   | x :: l ->
@@ -51,11 +53,14 @@ let clear_progress () =
 
 let print_progress total_bytes fname bytes lines =
   let progress = float bytes /. float total_bytes in
-  let total_lines = float lines /. progress in
+  let total_lines = truncate (float lines /. progress) in
+  if !count_display_width < 0 then
+    count_display_width :=
+      String.length (readable_string_of_int (5 * total_lines));
   printf "%3.0f%% [%s] projected line count: %s %!"
     (100. *. progress)
     (Filename.basename fname)
-    (readable_string_of_int (truncate total_lines))
+    (readable_string_of_int total_lines)
 
 let find_lines_in_chunk
     total_bytes initial_bytes initial_lines fname buf len =
@@ -107,6 +112,16 @@ let count total_bytes initial_bytes initial_lines fname =
     (try Unix.close fd with _ -> ());
     raise e
 
+let string_of_count n =
+  let count_s = readable_string_of_int n in
+  if !count_display_width < 0 then
+    count_display_width := 10;
+  let blank =
+    let len = max 0 (!count_display_width - String.length count_s) in
+    String.make len ' '
+  in
+  blank ^ count_s
+
 let main () =
   let files = List.tl (Array.to_list Sys.argv) in
   let l = select get_info files in
@@ -114,16 +129,14 @@ let main () =
   let _, total_lines =
     List.fold_left (
       fun (bytes0, lines0) (fname, info) ->
-        let lines =
-          count total_bytes bytes0 lines0 fname
-        in
+        let lines = count total_bytes bytes0 lines0 fname in
         let file_lines = lines - lines0 in
         clear_progress ();
-        printf "%s %s\n%!" (readable_string_of_int file_lines) fname;
+        printf "%s %s\n%!" (string_of_count file_lines) fname;
         (bytes0 + info.Unix.st_size, lines)
     ) (0, 0) l
   in
-  printf "%s total\n%!" (readable_string_of_int total_lines)
+  printf "%s total\n%!" (string_of_count total_lines)
 
 let () =
   main ()
