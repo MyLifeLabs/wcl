@@ -1,5 +1,10 @@
-wcl: wcl.ml
-	ocamlopt -o wcl -annot unix.cmxa wcl.ml
+VERSION = 1.0.0
+
+wcl: wcl_version.ml wcl.ml
+	ocamlopt -o wcl -annot unix.cmxa wcl_version.ml wcl.ml
+
+wcl_version.ml: Makefile
+	echo 'let version = "$(VERSION)"' > wcl_version.ml
 
 ifndef PREFIX
 PREFIX = $(HOME)

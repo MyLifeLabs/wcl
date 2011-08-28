@@ -123,7 +123,12 @@ let string_of_count n =
   blank ^ count_s
 
 let main () =
-  let options = [] in
+  let options = [
+    "-version", Arg.Unit (fun () -> print_endline Wcl_version.version; exit 0),
+    "
+          Print wcl version and exit."
+  ]
+  in
   let usage_msg = sprintf "\
 Usage: %s [OPTIONS] FILE1 [FILE2 ...]
 
