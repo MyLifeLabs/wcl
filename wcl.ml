@@ -123,7 +123,24 @@ let string_of_count n =
   blank ^ count_s
 
 let main () =
-  let files = List.tl (Array.to_list Sys.argv) in
+  let options = [] in
+  let usage_msg = sprintf "\
+Usage: %s [OPTIONS] FILE1 [FILE2 ...]
+
+wcl is a replacement for \"wc -l\" useful for interactive use
+with large data files. It displays a progress meter and an estimate 
+of the total number of lines.
+
+Options:
+"
+    Sys.argv.(0)
+  in
+  let files = ref [] in
+  let anon_fun s =
+    files := s :: !files in
+  Arg.parse options anon_fun usage_msg;
+
+  let files = List.rev !files in
   let l = select get_info files in
   let total_bytes = get_total_bytes l in
   let _, total_lines =

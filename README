@@ -1,24 +1,29 @@
-"wc -l" with estimation of total number of lines as it progresses
-and progress indicator.
 
-Example:
+                                wcl
+                     "wc -l" for the impatient
 
-in progress:
+
+wcl is a replacement for "wc -l" useful for interactive use
+with large data files. It displays a progress meter and an estimate 
+of the total number of lines.
+
+While in progress, it looks like this:
 
   $ wcl aaaaaaaaaaaaa.dat bbbbbbbbbbbb.dat ccccccccc.dat
   31,261,832 aaaaaaaaaaaaa.dat
    11% [bbbbbbbbbbbb.dat] projected line count: 443,486,924
 
-complete:
+When complete, it looks like this:
 
   $ wcl aaaaaaaaaaaaa.dat bbbbbbbbbbbb.dat ccccccccc.dat
-  31,261,832 aaaaaaaaaaaaa.dat
-  167,622,458 bbbbbbbbbbbb.dat
-  244,602,594 ccccccccc.dat
-  443,486,884 total
+    31,261,832 aaaaaaaaaaaaa.dat
+   167,622,458 bbbbbbbbbbbb.dat
+   244,602,594 ccccccccc.dat
+   443,486,884 total
 
 
-Installation:
+INSTALLATION
+------------
 
 Requires a standard installation of OCaml.
 
@@ -36,7 +41,8 @@ Uninstallation:
  $ make uninstall
 
 
-Limitations:
+KNOWN LIMITATIONS
+-----------------
 
 - no support for files over 1GB on 32-bit platforms
 - progress bar probably doesn't show up properly on Windows
