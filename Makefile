@@ -28,4 +28,4 @@ uninstall:
 
 .PHONY: clean
 clean:
-	rm -f *.cm[iox] *.o *.annot *~ wcl
+	rm -f *.cm[iox] *.o *.annot *~ wcl wcl_version.ml
