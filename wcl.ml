@@ -128,8 +128,10 @@ let main () =
 Usage: %s [OPTIONS] FILE1 [FILE2 ...]
 
 wcl is a replacement for \"wc -l\" useful for interactive use
-with large data files. It displays a progress meter and an estimate 
-of the total number of lines.
+with large data files. Like \"wc -l\" it counts the number of lines
+in files and displays the total. Unlike \"wc -l\", wcl displays a progress 
+meter and an estimate of the total number of lines as it progresses.
+
 
 Options:
 "
