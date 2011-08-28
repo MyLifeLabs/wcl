@@ -23,7 +23,17 @@ Installation:
 Requires a standard installation of OCaml.
 
  $ make
- $ cp wcl ~/bin   # copy executable to wherever you want
+ $ make install  # Installation directory defaults to $HOME/bin.
+
+PREFIX and BINDIR are supported, so if you want to install wcl in /usr/local,
+just do:
+
+ $ sudo make PREFIX=/usr/local install
+
+
+Uninstallation:
+
+ $ make uninstall
 
 
 Limitations:
