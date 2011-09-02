@@ -163,4 +163,8 @@ Options:
   printf "%s total\n%!" (string_of_count total_lines)
 
 let () =
-  main ()
+  try
+    Unix.handle_unix_error main ()
+  with e ->
+    eprintf "Error: %s\n%!" (Printexc.to_string e);
+    exit 1
