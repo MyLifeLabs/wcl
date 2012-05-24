@@ -15,7 +15,7 @@ let ( // ) = Int64.div
 let ( %% ) = Int64.rem
 
 
-let refresh_interval = ref 100_000_000L (* bytes *)
+let refresh_interval = ref 20_000_000L (* bytes *)
 
 let count_display_width = ref (-1)
 
