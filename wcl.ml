@@ -2,13 +2,19 @@
   Line count with estimation of total number of lines.
 *)
 
-(*
-  TODO: support for files over 1GB on 32-bit platforms
-*)
-
 open Printf
 
-let every = 1_000_000
+(*
+  Int64 support - all file sizes use int64 in order to avoid reaching
+  the 1GB limit on 32-bit platforms.
+*)
+module F = Unix.LargeFile
+let ( ++ ) = Int64.add
+let ( -- ) = Int64.sub
+let ( // ) = Int64.div
+let ( %% ) = Int64.rem
+
+let every = 1_000_000L
 
 let count_display_width = ref (-1)
 
@@ -19,14 +25,14 @@ let rec select f = function
           None -> select f l
         | Some y -> y :: select f l
 
-let readable_string_of_int n =
+let readable_string_of_int64 n =
   let rec loop digits n =
-    if n < 0 then "-" ^ loop digits (-n)
-    else if n = 0 then "0"
+    if n < 0L then "-" ^ loop digits (Int64.neg n)
+    else if n = 0L then "0"
     else
-      let s = string_of_int (n mod 10) in
-      let n = n / 10 in
-      if n <> 0 then
+      let s = Int64.to_string (n %% 10L) in
+      let n = n // 10L in
+      if n <> 0L then
         let sep =
           if (digits+1) mod 3 = 0 then ","
           else ""
@@ -37,8 +43,8 @@ let readable_string_of_int n =
   loop 0 n
 
 let get_info fname =
-  let x = Unix.stat fname in
-  if x.Unix.st_kind <> Unix.S_REG then (
+  let x = F.stat fname in
+  if x.F.st_kind <> Unix.S_REG then (
     eprintf "Ignoring %S: not a regular file\n%!" fname;
     None
   )
@@ -46,36 +52,37 @@ let get_info fname =
     Some (fname, x)
 
 let get_total_bytes l =
-  List.fold_left (fun acc (fname, x) -> acc + x.Unix.st_size) 0 l
+  List.fold_left (fun acc (fname, x) ->
+                    Int64.add acc x.F.st_size) 0L l
 
 let clear_progress () =
   printf "\r\x1B[K%!"
 
 let print_progress total_bytes fname bytes lines =
-  let progress = float bytes /. float total_bytes in
-  let total_lines = truncate (float lines /. progress) in
+  let progress = Int64.to_float bytes /. Int64.to_float total_bytes in
+  let total_lines = Int64.of_float (Int64.to_float lines /. progress) in
   if !count_display_width < 0 then
     count_display_width :=
-      String.length (readable_string_of_int (5 * total_lines));
+      String.length (readable_string_of_int64 (Int64.mul 5L total_lines));
   printf "%3.0f%% [%s] projected line count: %s %!"
     (100. *. progress)
     (Filename.basename fname)
-    (readable_string_of_int total_lines)
+    (readable_string_of_int64 total_lines)
 
 let find_lines_in_chunk
     total_bytes initial_bytes initial_lines fname buf len =
-  let local_lines = ref 0 in
+  let local_lines = ref 0L in
   for i = 0 to len - 1 do
     match String.unsafe_get buf i with
         '\n' ->
-          incr local_lines;
-          if (initial_lines + !local_lines) mod every = 0 then (
+          local_lines := !local_lines ++ 1L;
+          if Int64.rem (initial_lines ++ !local_lines) every = 0L then (
             clear_progress ();
             print_progress
               total_bytes
               fname
-              (initial_bytes + i)
-              (initial_lines + !local_lines)
+              (initial_bytes ++ Int64.of_int i)
+              (initial_lines ++ !local_lines)
           )
       | _ -> ()
   done;
@@ -97,7 +104,8 @@ let rec read_file total_bytes initial_bytes initial_lines fname fd buf =
         in
         read_file
           total_bytes
-          (initial_bytes + chunk_bytes) (initial_lines + chunk_lines)
+          (initial_bytes ++ Int64.of_int chunk_bytes)
+          (initial_lines ++ chunk_lines)
           fname fd buf 
 
 let count total_bytes initial_bytes initial_lines fname =
@@ -113,7 +121,7 @@ let count total_bytes initial_bytes initial_lines fname =
     raise e
 
 let string_of_count n =
-  let count_s = readable_string_of_int n in
+  let count_s = readable_string_of_int64 n in
   if !count_display_width < 0 then
     count_display_width := 10;
   let blank =
@@ -154,11 +162,11 @@ Options:
     List.fold_left (
       fun (bytes0, lines0) (fname, info) ->
         let lines = count total_bytes bytes0 lines0 fname in
-        let file_lines = lines - lines0 in
+        let file_lines = lines -- lines0 in
         clear_progress ();
         printf "%s %s\n%!" (string_of_count file_lines) fname;
-        (bytes0 + info.Unix.st_size, lines)
-    ) (0, 0) l
+        (bytes0 ++ info.F.st_size, lines)
+    ) (0L, 0L) l
   in
   printf "%s total\n%!" (string_of_count total_lines)
 
